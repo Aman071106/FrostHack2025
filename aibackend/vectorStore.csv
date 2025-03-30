@@ -1,0 +1,17 @@
+userId,date,time,amount,category,location,mode
+user123,2025-03-30,08:45,0,Food,Delhi,Cash
+user123,2025-03-30,12:30,0,Shopping,Delhi,UPI
+user123,2025-03-30,09:15,0,Transport,Mumbai,Card
+user123,2025-03-30,19:00,0,Electronics,Bangalore,NetBanking
+user123,2025-03-30,14:20,0,Food,Chennai,Cash
+user122,2025-03-30,20:10,00,Entertainment,Pune,UPI
+user122,2025-03-30,11:55,0,Groceries,Hyderabad,Credit Card
+user122,2025-03-30,17:40,0,Clothing,Kolkata,Debit Card
+user123,2025-03-30,08:45,0,Food,Delhi,Cash
+user123,2025-03-30,12:30,0,Wine,Delhi,UPI
+user123,2025-03-30,09:15,0,Wine,Mumbai,Card
+user123,2025-03-30,19:00,00,Cigratte,Bangalore,NetBanking
+user123,2025-03-30,14:20,0,ALCOHOL,Chennai,Cash
+user122,2025-03-30,20:10,00,Drugs,Pune,UPI
+user122,2025-03-30,11:55,0,Cigratte,Hyderabad,Credit Card
+user122,2025-03-30,17:40,0,Clothing,Kolkata,Debit Card

@@ -1,9 +1,10 @@
 // app/expense-insights/components/TransactionList.tsx
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Transaction } from '../utils/csvParser';
 import logger from '../utils/logger';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -14,6 +15,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
   const [sortField, setSortField] = useState<keyof Transaction>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const itemsPerPage = 10;
 
   logger.debug(`Rendering transaction list with ${transactions.length} transactions`);
@@ -100,35 +103,164 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
     }).format(date);
   };
 
+  // Get category color
+  const getCategoryColor = (category: string) => {
+    const categoryColors: Record<string, string> = {
+      'Food': 'bg-amber-100 text-amber-800',
+      'Groceries': 'bg-emerald-100 text-emerald-800',
+      'Shopping': 'bg-purple-100 text-purple-800',
+      'Entertainment': 'bg-pink-100 text-pink-800',
+      'Transportation': 'bg-blue-100 text-blue-800',
+      'Housing': 'bg-orange-100 text-orange-800',
+      'Utilities': 'bg-cyan-100 text-cyan-800',
+      'Healthcare': 'bg-red-100 text-red-800',
+      'Education': 'bg-indigo-100 text-indigo-800',
+      'Travel': 'bg-violet-100 text-violet-800',
+    };
+    
+    return categoryColors[category] || 'bg-blue-100 text-blue-800';
+  };
+
+  // Animation variants
+  const tableRowVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (index: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: index * 0.05,
+        duration: 0.3,
+        ease: "easeOut"
+      }
+    }),
+    exit: { opacity: 0, x: -10, transition: { duration: 0.2 } }
+  };
+
+  const headerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        delay: 0.1,
+        duration: 0.4, 
+        ease: "easeOut" 
+      } 
+    }
+  };
+
+  // Effect to handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + F focuses the search input
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-5 sm:px-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900">Transaction History</h3>
-        <p className="mt-1 max-w-2xl text-sm text-gray-500">
-          {transactions.length} transactions found
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"
+    >
+      <motion.div 
+        variants={headerVariants}
+        initial="hidden"
+        animate="visible"
+        className="px-6 py-6 sm:px-8"
+      >
+        <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+          <motion.span
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            className="inline-block mr-3 text-blue-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </motion.span>
+          Transaction History
+        </h3>
+        <p className="mt-2 text-sm text-gray-500 flex items-center">
+          {/* <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            className="bg-blue-50 text-blue-700 rounded-full px-2.5 py-0.5 mr-2 font-medium"
+          >
+            {transactions.length}
+          </motion.div> */}
+          transactions found
         </p>
         
         {/* Search input */}
-        <div className="mt-4">
-          <div className="relative rounded-md shadow-sm">
+        <motion.div 
+          className="mt-5"
+          initial={{ opacity: 0, width: "90%" }}
+          animate={{ opacity: 1, width: "100%" }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <div className={`relative rounded-lg shadow-sm transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-blue-500' : ''}`}>
             <input
+              ref={searchInputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1); // Reset to first page on search
               }}
-              className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              className="block w-full rounded-lg border-gray-300 pl-10 pr-10 py-3 focus:border-blue-500 focus:outline-none sm:text-sm text-[#101828]"
               placeholder="Search transactions..."
             />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 ${isSearchFocused ? 'text-blue-500' : 'text-blue-500'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
+            {searchTerm && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                onClick={() => setSearchTerm('')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </motion.div>
+            )}
           </div>
-        </div>
-      </div>
+          {searchTerm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-2 text-sm text-gray-500"
+            >
+              Found {
+                transactions.filter(tx => 
+                  tx.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                  tx.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  tx.amount.toString().includes(searchTerm) ||
+                  tx.date.toLocaleDateString().includes(searchTerm)
+                ).length
+              } matching transactions
+            </motion.div>
+          )}
+        </motion.div>
+      </motion.div>
       
       {/* Transactions table */}
       <div className="overflow-x-auto">
@@ -137,115 +269,178 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
             <tr>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer transition-colors hover:bg-gray-100"
                 onClick={() => handleSort('date')}
               >
                 <div className="flex items-center">
                   Date
-                  {sortField === 'date' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <motion.div 
+                    animate={{ rotate: sortField === 'date' ? (sortDirection === 'asc' ? 180 : 0) : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`ml-1 ${sortField === 'date' ? 'opacity-100' : 'opacity-0'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                  )}
+                  </motion.div>
                 </div>
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer transition-colors hover:bg-gray-100"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center">
                   Description
-                  {sortField === 'description' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <motion.div 
+                    animate={{ rotate: sortField === 'description' ? (sortDirection === 'asc' ? 180 : 0) : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`ml-1 ${sortField === 'description' ? 'opacity-100' : 'opacity-0'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                  )}
+                  </motion.div>
                 </div>
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer transition-colors hover:bg-gray-100"
                 onClick={() => handleSort('category')}
               >
                 <div className="flex items-center">
                   Category
-                  {sortField === 'category' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <motion.div 
+                    animate={{ rotate: sortField === 'category' ? (sortDirection === 'asc' ? 180 : 0) : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`ml-1 ${sortField === 'category' ? 'opacity-100' : 'opacity-0'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                  )}
+                  </motion.div>
                 </div>
               </th>
               <th 
                 scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer transition-colors hover:bg-gray-100"
                 onClick={() => handleSort('amount')}
               >
                 <div className="flex items-center">
                   Amount
-                  {sortField === 'amount' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                  <motion.div 
+                    animate={{ rotate: sortField === 'amount' ? (sortDirection === 'asc' ? 180 : 0) : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`ml-1 ${sortField === 'amount' ? 'opacity-100' : 'opacity-0'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                  )}
+                  </motion.div>
                 </div>
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {displayTransactions.length > 0 ? (
-              displayTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(transaction.date)}
+            <AnimatePresence>
+              {displayTransactions.length > 0 ? (
+                displayTransactions.map((transaction, index) => (
+                  <motion.tr 
+                    key={transaction.id} 
+                    custom={index}
+                    variants={tableRowVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="hover:bg-gray-50 group transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 transition-colors group-hover:text-gray-700">
+                      {formatDate(transaction.date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {transaction.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryColor(transaction.category)}`}>
+                        {transaction.category}
+                      </span>
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      <motion.div
+                        initial={{ opacity: 0, x: transaction.amount < 0 ? 20 : -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 + 0.2, duration: 0.4 }}
+                      >
+                        {formatCurrency(transaction.amount)}
+                      </motion.div>
+                    </td>
+                  </motion.tr>
+                ))
+              ) : (
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <motion.div
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      className="flex flex-col items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {transactions.length === 0 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        )}
+                      </svg>
+                      <span className="text-gray-400 font-medium">
+                        {transactions.length === 0 
+                          ? 'No transactions available. Please upload a CSV file.'
+                          : 'No transactions match your search criteria.'}
+                      </span>
+                    </motion.div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {transaction.category}
-                    </span>
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(transaction.amount)}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                  {transactions.length === 0 
-                    ? 'No transactions available. Please upload a CSV file.'
-                    : 'No transactions match your search criteria.'}
-                </td>
-              </tr>
-            )}
+                </motion.tr>
+              )}
+            </AnimatePresence>
           </tbody>
         </table>
       </div>
       
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200"
+        >
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-medium">
+                Showing{' '}
+                <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span>{' '}
+                to{' '}
+                <span className="font-medium text-gray-900">
                   {Math.min(currentPage * itemsPerPage, transactions.length)}
                 </span>{' '}
-                of <span className="font-medium">{transactions.length}</span> results
+                of{' '} 
+                <span className="font-medium text-gray-900">{transactions.length}</span>{' '}
+                results
               </p>
             </div>
             <div>
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 {/* Previous button */}
-                <button
+                <motion.button
+                  whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
+                  whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                  className={`relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
                     currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
@@ -253,9 +448,9 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                </button>
+                </motion.button>
                 
-                {/* Page buttons - show 5 pages max */}
+                {/* Page buttons */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
                   if (totalPages <= 5) {
@@ -269,8 +464,10 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
                   }
                   
                   return (
-                    <button
+                    <motion.button
                       key={pageNum}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setCurrentPage(pageNum)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                         currentPage === pageNum
@@ -279,15 +476,17 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
                       }`}
                     >
                       {pageNum}
-                    </button>
+                    </motion.button>
                   );
                 })}
                 
                 {/* Next button */}
-                <button
+                <motion.button
+                  whileHover={currentPage !== totalPages ? { scale: 1.05 } : {}}
+                  whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                  className={`relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
                     currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
@@ -295,13 +494,13 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                   </svg>
-                </button>
+                </motion.button>
               </nav>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

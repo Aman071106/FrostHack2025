@@ -2,6 +2,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import CSVUploader from './components/CSVUploader';
 import TransactionList from './components/TransactionList';
 import ExpenseChart from './components/ExpenseChart';
@@ -9,6 +10,7 @@ import { Transaction } from './utils/csvParser';
 import logger from './utils/logger';
 
 export default function ExpenseInsightsPage() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'charts' | 'transactions'>('charts');
@@ -60,6 +62,19 @@ export default function ExpenseInsightsPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8"
         >
+          <div className="flex items-center justify-between mb-4">
+            <motion.button
+              onClick={() => router.back()}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">Back</span>
+            </motion.button>
+          </div>
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[#101828] to-[#101828]">
               Expense Insights

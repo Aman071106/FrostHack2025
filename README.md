@@ -84,7 +84,10 @@ python rag.py & python user.py
 ---
 
 ## 📊 Dashboard Preview
-![Dashboard](docs/dashboard_preview.png)
+![image](https://github.com/user-attachments/assets/b9298ee4-024e-41ad-aa95-477900161220)
+## 🤖 Financify Agent
+![image](https://github.com/user-attachments/assets/9151ad08-8759-47e5-97a7-91d7504facf2)
+
 
 ---
 

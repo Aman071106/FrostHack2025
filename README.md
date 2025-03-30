@@ -49,8 +49,9 @@ graph TD
 ### 1️⃣ Backend Setup (Flask & Fetch.AI Agents)
 ```bash
 # Clone the repository
-git clone [https://github.com/your-repo/ai-finance-tracker.git](https://github.com/Aman071106/FrostHack2025.git)
-cd ai-finance-tracker
+git clone https://github.com/Aman071106/FrostHack2025.git
+cd FrostHack2025
+cd aibackend
 
 # Set up virtual environment
 python3 -m venv venv

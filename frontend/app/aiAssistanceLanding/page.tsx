@@ -14,16 +14,35 @@ type Message = {
   id: string;
 };
 
-export default function AiAssistantPage() {
+export default function RagQuerySystem() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [typingEffect, setTypingEffect] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(true);
+  const [url, setUrl] = useState("user123"); // Default URL
+  const [agentStatus, setAgentStatus] = useState(true);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const chatContainerRef = useRef<null | HTMLDivElement>(null);
+  
+  // Check agent status
+  useEffect(() => {
+    const checkAgentStatus = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/");
+        setAgentStatus(response.status === 200);
+      } catch (error) {
+        setAgentStatus(true);
+      }
+    };
+    
+    checkAgentStatus();
+    // Check status every 30 seconds
+    const interval = setInterval(checkAgentStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Typing animation effect for bot responses
   useEffect(() => {
@@ -40,7 +59,7 @@ export default function AiAssistantPage() {
             i++;
           } else {
             clearInterval(typingInterval);
-            setIsTyping(false);
+            setIsTyping(true);
           }
         }, 15);
         
@@ -54,31 +73,62 @@ export default function AiAssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingEffect]);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+// Replace the sendRagRequest function in your component with this:
 
-    const userMessage: Message = { sender: "user", text: input, id: Date.now().toString() };
-    const newMessages: Message[] = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
+const sendRagRequest = async () => {
+  if (!input.trim()) return;
 
-    try {
-      const response = await axios.post<{ reply: string }>("/api/gemini", { message: input });
-      const botMessage: Message = { sender: "bot", text: response.data.reply, id: (Date.now() + 1).toString() };
-      setMessages([...newMessages, botMessage]);
-      setIsTyping(true);
-    } catch (error) {
-      setMessages([...newMessages, { sender: "bot", text: "Error fetching response.", id: (Date.now() + 1).toString() }]);
-    } finally {
-      setLoading(false);
+  const userMessage: Message = { sender: "user", text: input, id: Date.now().toString() };
+  const newMessages: Message[] = [...messages, userMessage];
+  setMessages(newMessages);
+  setInput("");
+  setLoading(true);
+
+  try {
+    // Use the Next.js API route instead of calling the agent directly
+    const response = await axios.post("/api/rag", {
+      url: url,
+      user_query: [input.trim()]
+    });
+    
+    let botResponse = "No response received";
+    
+    if (response.data && response.data.text) {
+      botResponse = response.data.text;
+    } else if (response.data && response.data.error) {
+      botResponse = `Error: ${response.data.error}`;
     }
-  };
+    
+    const botMessage: Message = { 
+      sender: "bot", 
+      text: botResponse, 
+      id: (Date.now() + 1).toString() 
+    };
+    
+    setMessages([...newMessages, botMessage]);
+    setIsTyping(true);
+  } catch (error) {
+    const errorMessage = error instanceof Error 
+      ? `Connection error: ${error.message}` 
+      : "An unknown error occurred";
+      
+    setMessages([
+      ...newMessages, 
+      { 
+        sender: "bot", 
+        text: errorMessage, 
+        id: (Date.now() + 1).toString() 
+      }
+    ]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      sendRagRequest();
     }
   };
 
@@ -119,7 +169,6 @@ export default function AiAssistantPage() {
     );
   };
   
-
   return (
     <div className="min-h-screen bg-white flex relative overflow-hidden">
       {/* Particle background */}
@@ -197,6 +246,36 @@ export default function AiAssistantPage() {
             {/* Subtle gradient background */}
             <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-3xl opacity-70"></div>
             
+            {/* URL Input */}
+            <div className="relative z-10 mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter website URL..."
+                className="w-full px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#1c3f3a] focus:outline-none"
+              />
+            </div>
+            
+            {/* Agent Status Indicator */}
+            <motion.div 
+              className={`relative z-10 mb-6 p-3 rounded-lg ${agentStatus ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'} border`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center">
+                <span className="relative flex h-3 w-3 mr-2">
+                  <span className={`${agentStatus ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${agentStatus ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${agentStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                </span>
+                <p className={`text-sm ${agentStatus ? 'text-green-800' : 'text-red-800'}`}>
+                  {agentStatus ? 'Agent is running' : 'Agent not detected. Please start the agent before using this app.'}
+                </p>
+              </div>
+            </motion.div>
+
             {/* Action buttons */}
             <div className="relative flex gap-2 mb-8 z-10">
               {/* History Button with Dropdown */}
@@ -290,7 +369,7 @@ export default function AiAssistantPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    Your AI Finance Assistant
+                    RAG Query System
                   </motion.h2>
                   
                   <motion.p 
@@ -299,7 +378,7 @@ export default function AiAssistantPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    Ask me anything about your finances, investments, or market trends.
+                    Ask questions about website content using our RAG (Retrieval-Augmented Generation) system.
                   </motion.p>
                 </motion.div>
               ) : (
@@ -351,7 +430,7 @@ export default function AiAssistantPage() {
                       >
                         <RotateCw className="h-4 w-4" />
                       </motion.div>
-                      <span>Thinking...</span>
+                      <span>Processing request...</span>
                     </motion.div>
                   )}
                   <div ref={messagesEndRef} />
@@ -375,14 +454,14 @@ export default function AiAssistantPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder="Type your finance query..."
+                  placeholder="Ask a question about the website content..."
                   className="w-full px-6 py-4 pl-12 rounded-full bg-white border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#1c3f3a] focus:outline-none text-[#0A0C29] transition-all duration-300"
                 />
                 <Sparkles className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 
                 <motion.button
-                  onClick={sendMessage}
-                  disabled={loading || !input.trim()}
+                  onClick={sendRagRequest}
+                  disabled={loading || !input.trim() || !agentStatus}
                   className="absolute right-2 bottom-2 p-3 bg-[#1c3f3a] text-white rounded-full hover:bg-[#1c3f3a]/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -391,7 +470,7 @@ export default function AiAssistantPage() {
                   <span className="sr-only">Submit</span>
                   
                   {/* Submit button pulse effect */}
-                  {input.trim() && (
+                  {input.trim() && agentStatus && (
                     <motion.span
                       className="absolute inset-0 rounded-full bg-[#1c3f3a]"
                       animate={{ 
@@ -416,7 +495,7 @@ export default function AiAssistantPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                {["Investment tips", "Market analysis", "Financial planning", "Retirement advice"].map((suggestion, i) => (
+                {["What are the amount spend?", "Give me the table", "Summarize the page", "Extract key information"].map((suggestion, i) => (
                   <motion.button
                     key={i}
                     onClick={() => setInput(suggestion)}
@@ -435,16 +514,16 @@ export default function AiAssistantPage() {
             
             {/* Floating status indicator */}
             <motion.div 
-              className="absolute bottom-2 right-2 flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100"
+              className={`absolute bottom-2 right-2 flex items-center gap-1 text-xs ${agentStatus ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-600 bg-red-50 border-red-100'} px-2 py-1 rounded-full border`}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.8, type: "spring" }}
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                <span className={`${agentStatus ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${agentStatus ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${agentStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
               </span>
-              AI Online
+              {agentStatus ? 'Agent Online' : 'Agent Offline'}
             </motion.div>
           </motion.div>
         </main>

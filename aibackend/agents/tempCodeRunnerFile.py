@@ -66,7 +66,27 @@ def generate_gemini_response(query, context):
         str: AI-generated response based on the queries and context.
     """
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert in financial advice and anaysis. Your task is to read and analyze deeply the behaviour of user based on his past transactions. answer should be in a normal text form and table form not in bold or italic uses"""),
+        ("system", """You are an expert in financial advice and anaysis. Your task is to read and analyze deeply the behaviour of user based on his past transactions
+        ### User Question:
+        "{query}"
+
+        ### Database Schema:
+        The database table contains the following columns:
+        - date : The transaction date in YYYY-MM-DD format.
+        - amount : The amount of the transaction.
+        - category : The type of transaction (e.g., Expense, Income).
+        - location : Describing where the transaction was performed.
+        - mode : Which mode was employed for the transaction(debit card,UPI etc..).
+
+        ### Output Rules:
+        1. **Do include explanations, comments, or descriptions outside these sections.**
+        2. **If the question asks for total expenses, use `SUM(amount) AS total_expense`.**
+        3. **If the question asks for individual transactions, select `name, date, amount, transaction_type, description` and DO NOT use `SUM()` or `GROUP BY`.**
+        4. **If the question asks for "top" or "largest" or "smallest" or "lowest" transactions, use `ORDER BY amount DESC LIMIT X`.**
+        5. **If filtering by a specific month, use `EXTRACT(MONTH FROM date) = MM` instead of checking `month_year = 'YYYY-MM'`.**
+        6. **Do NOT include unnecessary placeholders or variable names—use real column names directly.**
+        7. **Be precise and to the point.
+        """),
         ("user", "{query}")
     ])
     full_response = llm.invoke(prompt_template.format(query=query + "Context:" + context))

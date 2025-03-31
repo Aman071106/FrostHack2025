@@ -47,15 +47,8 @@ graph TD
 ## 🔎 RAG (Retrieval-Augmented Generation) Pipeline  
 The **RAG Pipeline** ensures that financial insights are generated in real-time using both stored transaction history and external data sources. The following **interactive flowchart** visualizes the **RAG process**:  
 
-```mermaid  
-graph TD  
-    A[User Query] -->|Preprocess Request| B[Query Embedding]  
-    B -->|Fetch Relevant Transactions| C[Pathway Vector Store]  
-    C -->|Retrieve Top Matching Data| D[Retrieved Financial Data]  
-    D -->|Pass Data to Fetch.AI Agent| E[Finance Advisor Agent]  
-    E -->|Generates AI-Driven Insights| F[Final AI Response]  
-    F -->|Displays on Dashboard| G[Next.js Frontend]  
-```  
+![ChatGPT Image Mar 31, 2025, 06_07_49 AM](https://github.com/user-attachments/assets/9005f203-4bc4-4e99-855e-2f1f36094fcd)
+ 
 
 ---
 
@@ -112,9 +105,11 @@ http://localhost:3000
 ---
 
 ## 📊 Dashboard Preview  
-![image](https://github.com/user-attachments/assets/b9298ee4-024e-41ad-aa95-477900161220)  
+![chart](https://github.com/user-attachments/assets/faa5fa1d-2530-4c50-b049-395e041661aa)
+ 
 ## 🤖 Financify Agent  
-![image](https://github.com/user-attachments/assets/9151ad08-8759-47e5-97a7-91d7504facf2)  
+![query](https://github.com/user-attachments/assets/0858ef1b-f6bb-4ee1-9cfc-bd14426efdd0)
+
 
 
 ---  

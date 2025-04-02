@@ -186,13 +186,13 @@ export default function ExpenseInsightsPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-500 font-medium">Total Expenses</p>
+                      <p className="text-sm text-blue-500 font-medium">Total Income</p>
                       <p className="text-2xl font-bold text-gray-900">
                         ${transactions.reduce((sum, tx) => sum + (tx.amount < 0 ? Math.abs(tx.amount) : 0), 0).toFixed(2)}
                       </p>
                     </div>
                     <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-green-500 font-medium">Total Income</p>
+                      <p className="text-sm text-green-500 font-medium">Total Expenses</p>
                       <p className="text-2xl font-bold text-gray-900">
                         ${transactions.reduce((sum, tx) => sum + (tx.amount > 0 ? tx.amount : 0), 0).toFixed(2)}
                       </p>

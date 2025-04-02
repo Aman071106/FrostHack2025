@@ -100,7 +100,7 @@ const Chat = () => {
 
     // Quick suggestion buttons
     const suggestions = [
-        "How can I save money?",
+        "Website developers?",
         "Track my expenses",
         "Investment tips"
     ];

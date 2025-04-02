@@ -208,7 +208,7 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ transactions }) => {
                         style={{ cursor: 'pointer', transition: 'transform 0.3s ease-out' }}
                     />
                     {/* Show percentage label for larger slices */}
-                    {percentage > 10 && (
+                    {percentage > 4 && (
                         <text
                             x={centerX + (radius * 0.75) * Math.cos(midAngleRadians) + offsetX}
                             y={centerY + (radius * 0.75) * Math.sin(midAngleRadians) + offsetY}
@@ -328,9 +328,9 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ transactions }) => {
                                             className="w-4 h-4 rounded-full mr-2"
                                             style={{ backgroundColor: chartData.colors[activeIndex] }}
                                         ></div>
-                                        <span className="text-gray-800 font-medium">{chartData.data[activeIndex]?.name || 'N/A'}</span>
+                                        <span className="text-green-800 font-medium">{chartData.data[activeIndex]?.name || 'N/A'}</span>
                                     </div>
-                                    <p className="text-2xl font-bold">
+                                    <p className="text-2xl font-bold text-green-800">
                                         {formatCurrency(chartData.data[activeIndex]?.value || 0)}
                                     </p>
                                     <div className="text-sm text-gray-500 mt-1">
@@ -356,21 +356,21 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ transactions }) => {
 
                             <div className="space-y-4">
                                 <StatTicker 
-                                    label="Total Income"
+                                    label="Total Expenses"
                                     value={formatCurrency(totalStats.income)}
-                                    color="text-green-600"
+                                    color="text-red-600"
                                 />
                                 <StatTicker 
-                                    label="Total Expenses"
+                                    label="Total Income"
                                     value={formatCurrency(totalStats.expenses)}
-                                    color="text-red-600"
+                                    color="text-green-600"
                                 />
 
                                 <div className="border-t border-gray-200 pt-4">
                                     <StatTicker 
                                         label="Net Balance"
                                         value={formatCurrency(totalStats.income - totalStats.expenses)}
-                                        color={totalStats.income - totalStats.expenses >= 0 ? 'text-green-600' : 'text-red-600'}
+                                        color={totalStats.expenses - totalStats.income >= 0 ? 'text-green-600' : 'text-red-600'}
                                     />
                                 </div>
                             </div>

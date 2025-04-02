@@ -21,7 +21,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Provider>{children}</Provider>
-        <Chat /> {/* Include the Chat component here */}
+        {/* Only include Chat in layout if it's meant to appear on all pages */}
+        {/* Otherwise, keep it in the specific pages where it should appear */}
       </body>
     </html>
   );

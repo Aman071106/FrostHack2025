@@ -32,6 +32,72 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
     }
   };
 
+  // In CSVUploader.tsx, update the processFile function
+
+  // In CSVUploader.tsx, update the processFile function
+
+  const processFile = async (file: File) => {
+    // Check if it's a CSV file
+    if (!file.name.endsWith('.csv')) {
+      setError('Please upload a CSV file');
+      logger.error(`Invalid file type uploaded: ${file.type}`);
+      return;
+    }
+
+    setFileName(file.name);
+    setIsLoading(true);
+    simulateProgress();
+
+    try {
+      logger.info(`Processing CSV file: ${file.name} (${file.size} bytes)`);
+      const transactions = await parseCSV(file);
+      logger.info(`Successfully processed ${transactions.length} transactions`);
+
+      // Save transactions to localStorage
+      localStorage.setItem('userTransactions', JSON.stringify(transactions));
+
+      // Calculate and save the total balance
+      const totalBalance = calculateBalance(transactions);
+      localStorage.setItem('accountBalance', totalBalance.toString());
+
+      onDataLoaded(transactions);
+      completeUpload(true);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      logger.error(`Error processing CSV: ${errorMessage}`, err instanceof Error ? err : null);
+      setError(`Failed to parse CSV: ${errorMessage}`);
+      completeUpload(false);
+    }
+  };
+
+  // Add a function to calculate balance from transactions
+  const calculateBalance = (transactions: Transaction[]): number => {
+    // Assuming your Transaction type has an 'amount' field
+    // You'll need to adjust this logic based on your actual data structure
+    return transactions.reduce((total, transaction) => {
+      // Convert amount to number if it's a string and add it to total
+      const amount = typeof transaction.amount === 'string'
+        ? parseFloat(transaction.amount)
+        : transaction.amount;
+
+      return total + amount;
+    }, 0);
+  };
+
+  // // Add a function to calculate balance from transactions
+  // const calculateBalance = (transactions: Transaction[]): number => {
+  //   // Assuming your Transaction type has an 'amount' field
+  //   // You'll need to adjust this logic based on your actual data structure
+  //   return transactions.reduce((total, transaction) => {
+  //     // Convert amount to number if it's a string and add it to total
+  //     const amount = typeof transaction.amount === 'string'
+  //       ? parseFloat(transaction.amount)
+  //       : transaction.amount;
+
+  //     return total + amount;
+  //   }, 0);
+  // };
+
   const simulateProgress = () => {
     resetState();
     // Simulate upload progress
@@ -65,7 +131,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -88,10 +154,10 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
       clearInterval(progressTimerRef.current);
       progressTimerRef.current = null;
     }
-    
+
     // Animate to 100%
     setUploadProgress(100);
-    
+
     // Show success state after a delay
     setTimeout(() => {
       setIsLoading(false);
@@ -99,31 +165,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
     }, 500);
   }, []);
 
-  const processFile = async (file: File) => {
-    // Check if it's a CSV file
-    if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
-      logger.error(`Invalid file type uploaded: ${file.type}`);
-      return;
-    }
-
-    setFileName(file.name);
-    setIsLoading(true);
-    simulateProgress();
-    
-    try {
-      logger.info(`Processing CSV file: ${file.name} (${file.size} bytes)`);
-      const transactions = await parseCSV(file);
-      logger.info(`Successfully processed ${transactions.length} transactions`);
-      onDataLoaded(transactions);
-      completeUpload(true);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      logger.error(`Error processing CSV: ${errorMessage}`, err instanceof Error ? err : null);
-      setError(`Failed to parse CSV: ${errorMessage}`);
-      completeUpload(false);
-    }
-  };
+  // Removed duplicate declaration of processFile
 
   const resetUploader = () => {
     setFileName('');
@@ -137,13 +179,13 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
 
   return (
     <div className="mb-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="relative"
       >
-        <motion.div 
+        <motion.div
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300
             ${isDragging ? 'bg-blue-50 border-blue-400 scale-105' : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'}
@@ -165,10 +207,10 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
             accept=".csv"
             onChange={handleFileChange}
           />
-          
+
           <AnimatePresence mode="wait">
             {isLoading ? (
-              <motion.div 
+              <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -207,7 +249,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                   </svg>
                   {/* Percentage in the middle */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.span 
+                    <motion.span
                       className="text-xl font-bold text-blue-500"
                       key={Math.floor(uploadProgress)}
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -230,8 +272,8 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                     transition={{ type: "spring", stiffness: 50 }}
                   />
                 </motion.div>
-                <motion.p 
-                  initial={{ opacity: 0, y: 10 }} 
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                   className="text-lg font-medium text-gray-700"
@@ -240,7 +282,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 </motion.p>
               </motion.div>
             ) : isSuccess ? (
-              <motion.div 
+              <motion.div
                 key="success"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -248,19 +290,19 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 className="flex flex-col items-center py-8"
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
               >
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ 
-                    type: "spring", 
+                  transition={{
+                    type: "spring",
                     stiffness: 200,
                     damping: 20,
-                    duration: 0.8 
+                    duration: 0.8
                   }}
                 >
                   <CheckCircle2 className="h-20 w-20 text-green-500 mb-4" />
                 </motion.div>
-                <motion.h3 
+                <motion.h3
                   className="text-xl font-bold text-gray-800 mb-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -268,7 +310,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 >
                   CSV Processed Successfully!
                 </motion.h3>
-                <motion.p 
+                <motion.p
                   className="text-green-600 font-medium mb-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -292,7 +334,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 </motion.button>
               </motion.div>
             ) : error ? (
-              <motion.div 
+              <motion.div
                 key="error"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -306,7 +348,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 >
                   <AlertCircle className="h-20 w-20 text-red-500 mb-4" />
                 </motion.div>
-                <motion.h3 
+                <motion.h3
                   className="text-xl font-bold text-gray-800 mb-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -314,7 +356,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 >
                   Oops! Something went wrong
                 </motion.h3>
-                <motion.p 
+                <motion.p
                   className="text-red-600 font-medium mb-4 max-w-md"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -338,7 +380,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 </motion.button>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="upload"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -346,11 +388,11 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 className="flex flex-col items-center py-6"
               >
                 <motion.div
-                  animate={{ 
+                  animate={{
                     y: [0, -10, 0],
                     rotate: isDragging ? [0, -5, 5, -5, 0] : 0
                   }}
-                  transition={{ 
+                  transition={{
                     y: { repeat: Infinity, duration: 2, ease: "easeInOut" },
                     rotate: { duration: 0.5 }
                   }}
@@ -361,30 +403,30 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                   ) : (
                     <FileSpreadsheet className="h-20 w-20 text-gray-400" />
                   )}
-                  
+
                   {isDragging && (
                     <motion.div
                       className="absolute -inset-1 rounded-full"
-                      animate={{ 
+                      animate={{
                         boxShadow: ["0 0 0 0px rgba(59, 130, 246, 0.3)", "0 0 0 10px rgba(59, 130, 246, 0)"]
                       }}
-                      transition={{ 
+                      transition={{
                         repeat: Infinity,
                         duration: 1.5
                       }}
                     />
                   )}
                 </motion.div>
-                
-                <motion.h3 
+
+                <motion.h3
                   className={`text-xl font-bold mb-2 ${isDragging ? 'text-blue-600' : 'text-gray-800'}`}
                   animate={{ scale: isDragging ? 1.05 : 1 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   {isDragging ? 'Drop Your CSV File Here' : 'Drag & Drop Your CSV File Here'}
                 </motion.h3>
-                
-                <motion.p 
+
+                <motion.p
                   className="text-sm text-gray-500 mb-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -392,7 +434,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 >
                   or click to browse files
                 </motion.p>
-                
+
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -408,9 +450,9 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                     Browse Files
                   </motion.button>
                 </motion.div>
-                
+
                 {fileName && (
-                  <motion.p 
+                  <motion.p
                     className="text-sm font-medium text-blue-500 mt-4"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -418,7 +460,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                     Selected: {fileName}
                   </motion.p>
                 )}
-                
+
                 <motion.div
                   className="grid grid-cols-4 gap-4 mt-8 max-w-lg"
                   initial={{ opacity: 0 }}
@@ -426,7 +468,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                   transition={{ delay: 0.5 }}
                 >
                   {['Date', 'Description', 'Category', 'Amount'].map((col, i) => (
-                    <motion.div 
+                    <motion.div
                       key={col}
                       className="bg-gray-100 p-2 rounded text-xs font-medium text-gray-600"
                       initial={{ y: 20, opacity: 0 }}
@@ -437,8 +479,8 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                     </motion.div>
                   ))}
                 </motion.div>
-                
-                <motion.p 
+
+                <motion.p
                   className="text-xs text-gray-400 mt-6 max-w-xs text-center"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -450,7 +492,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
             )}
           </AnimatePresence>
         </motion.div>
-        
+
         {/* Floating confetti animation when upload is successful */}
         <AnimatePresence>
           {isSuccess && (
@@ -459,15 +501,15 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                 <motion.div
                   key={`confetti-${i}`}
                   className="absolute"
-                  initial={{ 
-                    x: "50%", 
+                  initial={{
+                    x: "50%",
                     y: "50%",
                     opacity: 1
                   }}
                   animate={{
                     x: `${50 + (Math.random() * 100 - 50)}%`,
                     y: [
-                      "50%", 
+                      "50%",
                       `${Math.random() * 30 - 80}%`
                     ],
                     opacity: [1, 0]
@@ -480,7 +522,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                     width: Math.random() * 10 + 5,
                     height: Math.random() * 10 + 5,
                     backgroundColor: [
-                      "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", 
+                      "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
                       "#EC4899", "#06B6D4", "#6366F1"
                     ][Math.floor(Math.random() * 8)],
                     borderRadius: Math.random() > 0.5 ? "50%" : "0%",

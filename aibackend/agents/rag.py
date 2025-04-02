@@ -3,34 +3,38 @@ from bs4 import BeautifulSoup
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.prompts import ChatPromptTemplate
-import requests
-from typing import List
+import pymysql
+from sqlalchemy import create_engine, text
 import dotenv
 import os
+from typing import List
 import pandas as pd
 
-
-# Load environment variables from .env file
+# Load environment variables
 dotenv.load_dotenv()
-# Retrieve the API key from environment variables   
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_NAME = "financial_data"
+
+# Database connection
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+engine = create_engine(DATABASE_URL)
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY)
 
 def read_past_transactions(url):
+    """Fetch past transactions of a user from MySQL database."""
     try:
-        df = pd.read_csv("vectorStore.csv", dtype={"userId": str})  # Ensure userId is string
-        expected_columns = {"userId", "date", "time", "amount", "category", "location", "mode"}
-        if not expected_columns.issubset(df.columns):
-            return "CSV file format is incorrect."
+        query = text(f"SELECT * FROM transactions WHERE userId = :user_id")
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn, params={"user_id": url})
 
-        user_data = df[df["userId"] == url]
-        if user_data.empty:
+        if df.empty:
             return "No financial data found for this user."
-
-        return user_data.to_string(index=False)
-    except FileNotFoundError:
-        return "Vector store file not found."
+        
+        return df.to_string(index=False)
     except Exception as e:
         return f"Error loading data: {str(e)}"
 
@@ -55,71 +59,38 @@ class RAGResponse(Model):
     response: str = Field(description="The AI-generated answer based on scraped content.")
 
 def generate_gemini_response(query, context):
-    """
-    Generates a response using Gemini AI model based on the provided queries and context.
-    
-    Args:
-        query (str): The user's queries.
-        context (str): Relevant text retrieved from the scraped website.
-    
-    Returns:
-        str: AI-generated response based on the queries and context.
-    """
+    """Generate response using Gemini AI."""
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert in financial advice and anaysis. Your task is to read and analyze deeply the behaviour of user based on his past transactions. answer should be in a normal text form and table form not in bold or italic uses"""),
+        ("system", """You are an expert in financial advice and analysis. Provide insights based on past transactions in a clear text and table format."""),
         ("user", "{query}")
     ])
     full_response = llm.invoke(prompt_template.format(query=query + "Context:" + context))
     return extract_answer(full_response)
 
 def extract_answer(full_response):
-    """
-    Extracts and returns the relevant content from Gemini's response.
-    
-    Args:
-        full_response (obj): The full response from Gemini.
-    
-    Returns:
-        str: The extracted response text or a default message if no content is found.
-    """
+    """Extract the AI-generated response."""
     return full_response.content.strip() if hasattr(full_response, "content") else "No response generated."
 
 agent = Agent(name="alice", seed="YOUR NEW PHRASE", port=8000, endpoint=["http://localhost:8000/submit"])
 
-# Updated function with the fix
 @agent.on_message(model=RAGRequest, replies=RAGResponse)
 async def handle_rag_request(ctx: Context, sender: str, msg: RAGRequest):
-    """
-    Handles incoming RAG requests, scrapes the website, retrieves relevant content,
-    and generates a response using Gemini AI model.
-    
-    Args:
-        ctx (Context): The context object for handling requests.
-        sender (str): The sender of the request.
-        msg (RAGRequest): The request message containing the URL and user query.
-    
-    Returns:
-        None: Sends a response back to the sender asynchronously.
-    """
-    ctx.logger.info(f"Scraping URL: {msg.url}")
-    scraped_text = read_past_transactions(msg.url)
-    
-    if "Failed to retrieve content" in scraped_text:
-        await ctx.send(sender, RAGResponse(response=scraped_text))
+    """Handles incoming RAG requests."""
+    ctx.logger.info(f"Retrieving data for user: {msg.url}")
+    user_data = read_past_transactions(msg.url)
+
+    if "Error" in user_data or "No financial data" in user_data:
+        await ctx.send(sender, RAGResponse(response=user_data))
         return
 
-    documents = [scraped_text]
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",  # Added required model parameter
-        google_api_key=GEMINI_API_KEY
-    )
+    documents = [user_data]
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GEMINI_API_KEY)
     vector_store = FAISS.from_texts(documents, embeddings)
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
     for question in msg.user_query:
         retrieved_docs = retriever.invoke(question)
         context = "".join([doc.page_content for doc in retrieved_docs])
-        
         response = generate_gemini_response(question, context)
         
         await ctx.send(sender, RAGResponse(response=response))

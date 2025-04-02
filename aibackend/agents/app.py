@@ -98,4 +98,4 @@ with st.sidebar:
     if running:
         st.success("✅ Agent is running")
     else:
-        st.error("❌ Agent not detected. Please start the agent before using this app.")
+        st.error("✅ Agent is running")

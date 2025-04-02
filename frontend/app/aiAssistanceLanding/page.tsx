@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { ArrowUp, Clock, Menu, PenSquare, ChevronDown, Sparkles, RotateCw } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import Sidebar from "@/components/sidebar";
+import { ArrowUp, X, Minimize2, Maximize2, ChevronDown, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 
 type Message = {
   sender: "user" | "bot";
@@ -14,538 +12,264 @@ type Message = {
   id: string;
 };
 
-export default function RagQuerySystem() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+export default function EnhancedChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [typingEffect, setTypingEffect] = useState("");
-  const [isTyping, setIsTyping] = useState(true);
-  const [url, setUrl] = useState("user123"); // Default URL
-  const [agentStatus, setAgentStatus] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-  const chatContainerRef = useRef<null | HTMLDivElement>(null);
-  
-  // Check agent status
-  useEffect(() => {
-    const checkAgentStatus = async () => {
-      try {
-        const response = await axios.get("http://localhost:8080/");
-        setAgentStatus(response.status === 200);
-      } catch (error) {
-        setAgentStatus(true);
-      }
-    };
-    
-    checkAgentStatus();
-    // Check status every 30 seconds
-    const interval = setInterval(checkAgentStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Typing animation effect for bot responses
-  useEffect(() => {
-    if (isTyping && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.sender === "bot") {
-        let i = 0;
-        const text = lastMessage.text;
-        setTypingEffect("");
-        
-        const typingInterval = setInterval(() => {
-          if (i < text.length) {
-            setTypingEffect((prev) => prev + text.charAt(i));
-            i++;
-          } else {
-            clearInterval(typingInterval);
-            setIsTyping(true);
-          }
-        }, 15);
-        
-        return () => clearInterval(typingInterval);
-      }
-    }
-  }, [isTyping, messages]);
-  
+  const url = "user129"; // Hardcoded URL since we simplified
+
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingEffect]);
+  }, [messages]);
 
-// Replace the sendRagRequest function in your component with this:
-
-const sendRagRequest = async () => {
-  if (!input.trim()) return;
-
-  const userMessage: Message = { sender: "user", text: input, id: Date.now().toString() };
-  const newMessages: Message[] = [...messages, userMessage];
-  setMessages(newMessages);
-  setInput("");
-  setLoading(true);
-
-  try {
-    // Use the Next.js API route instead of calling the agent directly
-    const response = await axios.post("/api/rag", {
-      url: url,
-      user_query: [input.trim()]
-    });
-    
-    let botResponse = "No response received";
-    
-    if (response.data && response.data.text) {
-      botResponse = response.data.text;
-    } else if (response.data && response.data.error) {
-      botResponse = `Error: ${response.data.error}`;
+  const sendMessage = async () => {
+    if (!input.trim()) {
+      console.log("Empty input, skipping request");
+      return;
     }
-    
-    const botMessage: Message = { 
-      sender: "bot", 
-      text: botResponse, 
-      id: (Date.now() + 1).toString() 
+
+    const userMessage: Message = {
+      sender: "user",
+      text: input,
+      id: Date.now().toString(),
     };
-    
-    setMessages([...newMessages, botMessage]);
-    setIsTyping(true);
-  } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? `Connection error: ${error.message}` 
-      : "An unknown error occurred";
-      
-    setMessages([
-      ...newMessages, 
-      { 
-        sender: "bot", 
-        text: errorMessage, 
-        id: (Date.now() + 1).toString() 
+
+    console.log("Adding user message:", userMessage);
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      console.log("Sending request to /api/rag with:", { url, query: input });
+      const response = await axios.post("/api/rag", {
+        url,
+        user_query: [input.trim()],
+      });
+
+      console.log("Raw response from API:", response.data);
+
+      let botResponse = "No response received";
+      if (response.data?.text) {
+        botResponse = response.data.text;
+        console.log("Parsed bot response:", botResponse);
+      } else if (response.data?.error) {
+        botResponse = `Error: ${response.data.error}`;
+        console.error("API returned error:", response.data.error);
       }
-    ]);
-  } finally {
-    setLoading(false);
-  }
-};
+
+      const botMessage: Message = {
+        sender: "bot",
+        text: botResponse,
+        id: (Date.now() + 1).toString(),
+      };
+
+      console.log("Adding bot message:", botMessage);
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Request failed:", error);
+      const errorMessage =
+        error instanceof Error
+          ? `Connection error: ${error.message}`
+          : "An unknown error occurred";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: errorMessage,
+          id: (Date.now() + 1).toString(),
+        },
+      ]);
+    } finally {
+      console.log("Request completed, setting loading to false");
+      setLoading(false);
+    }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendRagRequest();
+      sendMessage();
     }
   };
 
-  // Particle effect for the background
-  const Particles = () => {
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  
-    useEffect(() => {
-      if (typeof window !== "undefined") {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
-      }
-    }, []);
-  
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-[#1c3f3a] opacity-20"
-            initial={{
-              x: Math.random() * dimensions.width,
-              y: Math.random() * dimensions.height,
-            }}
-            animate={{
-              x: Math.random() * dimensions.width,
-              y: Math.random() * dimensions.height,
-              opacity: [0.2, 0.5, 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 10 + Math.random() * 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        ))}
-      </div>
-    );
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+    if (isMinimized) setIsMinimized(false);
   };
-  
+
+  const toggleMinimize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMinimized(!isMinimized);
+  };
+
   return (
-    <div className="min-h-screen bg-white flex relative overflow-hidden">
-      {/* Particle background */}
-      <Particles />
-      
-      {/* Sidebar with animation */}
+    <>
+      {/* Chat Button */}
+      {!isChatOpen && (
+        <motion.button
+          onClick={toggleChat}
+          className="bg-green-900 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <MessageSquare className="h-6 w-6" />
+        </motion.button>
+      )}
+
+      {/* Chat Window */}
       <AnimatePresence>
-        {isSidebarOpen && (
+        {isChatOpen && (
           <motion.div
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 left-0 z-20"
+            className="fixed bottom-6 right-6 w-full max-w-md flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
+            style={{ maxHeight: isMinimized ? "80px" : "70vh" }}
+            initial={{ opacity: 0, y: 50, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: isMinimized ? "80px" : "500px" }}
+            exit={{ opacity: 0, y: 50, height: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content with smooth transition */}
-      <motion.div 
-        className="flex-1 flex flex-col relative"
-        animate={{ 
-          marginLeft: isSidebarOpen ? "16rem" : "0rem"
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      >
-        <header className="w-full p-4 flex justify-between items-center bg-white backdrop-blur-sm bg-opacity-80 z-10 sticky top-0">
-          {/* Menu Button with hover effect */}
-          <motion.button 
-            onClick={() => setIsSidebarOpen(true)} 
-            className="p-2 border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-all duration-300"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Menu className="h-5 w-5 text-gray-500" />
-          </motion.button>
-
-          {/* Navigation Tabs with animation */}
-          <motion.div 
-            className="bg-white rounded-full border border-gray-200 flex overflow-hidden shadow-sm"
-            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-          >
-            <Link href="/features" className="relative px-8 py-2 font-medium text-[#0a0c29] overflow-hidden group">
-              <span className="relative z-10">FEATURES</span>
-              <motion.div 
-                className="absolute inset-0 bg-gray-100"
-                initial={{ y: "100%" }}
-                whileHover={{ y: 0 }}
-                transition={{ type: "tween", duration: 0.3 }}
-              />
-            </Link>
-            <Link href="/account" className="relative px-8 py-2 font-medium text-[#0a0c29] overflow-hidden group">
-              <span className="relative z-10">ACCOUNT</span>
-              <motion.div 
-                className="absolute inset-0 bg-gray-100"
-                initial={{ y: "100%" }}
-                whileHover={{ y: 0 }}
-                transition={{ type: "tween", duration: 0.3 }}
-              />
-            </Link>
-          </motion.div>
-          <div className="w-10"></div>
-        </header>
-
-        <main className="flex-1 flex flex-col p-4">
-          <motion.div 
-            className="w-full max-w-4xl mx-auto flex-1 border border-gray-200 rounded-3xl p-6 flex flex-col bg-white relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            whileHover={{ boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}
-          >
-            {/* Subtle gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-3xl opacity-70"></div>
-            
-            {/* URL Input */}
-            <div className="relative z-10 mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Enter website URL..."
-                className="w-full px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#1c3f3a] focus:outline-none"
-              />
-            </div>
-            
-            {/* Agent Status Indicator */}
-            <motion.div 
-              className={`relative z-10 mb-6 p-3 rounded-lg ${agentStatus ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'} border`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+            {/* Chat Header */}
+            <div 
+              className="flex items-center justify-between p-4 bg-green-900 text-white cursor-pointer"
+              onClick={isMinimized ? toggleMinimize : undefined}
             >
-              <div className="flex items-center">
-                <span className="relative flex h-3 w-3 mr-2">
-                  <span className={`${agentStatus ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${agentStatus ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
-                  <span className={`relative inline-flex rounded-full h-3 w-3 ${agentStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                </span>
-                <p className={`text-sm ${agentStatus ? 'text-green-800' : 'text-red-800'}`}>
-                  {agentStatus ? 'Agent is running' : 'Agent not detected. Please start the agent before using this app.'}
-                </p>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <h3 className="font-semibold">BlockOps Assistant</h3>
               </div>
-            </motion.div>
-
-            {/* Action buttons */}
-            <div className="relative flex gap-2 mb-8 z-10">
-              {/* History Button with Dropdown */}
-              <div className="relative">
-                <motion.button
-                  className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center gap-2"
-                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={toggleMinimize}
+                  className="text-white/80 hover:text-white transition-colors p-1"
                 >
-                  <Clock className="h-5 w-5 text-gray-500" />
-                  <motion.div
-                    animate={{ rotate: isHistoryOpen ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  </motion.div>
-                </motion.button>
-                <AnimatePresence>
-                  {isHistoryOpen && (
-                    <motion.div 
-                      className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ul className="py-2 text-gray-700">
-                        {['Recent Chat 1', 'Recent Chat 2', 'Recent Chat 3'].map((chat, index) => (
-                          <motion.li 
-                            key={index} 
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            whileHover={{ x: 5 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                          >
-                            {chat}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+                </button>
+                <button
+                  onClick={toggleChat}
+                  className="text-white/80 hover:text-white transition-colors p-1"
+                >
+                  <X size={18} />
+                </button>
               </div>
-
-              {/* Edit Button */}
-              <motion.button 
-                className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <PenSquare className="h-5 w-5 text-gray-500" />
-                <span className="sr-only">Edit</span>
-              </motion.button>
             </div>
 
-            {/* Chat Messages */}
-            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-4 z-10">
-              {messages.length === 0 ? (
-                <motion.div 
-                  className="mb-6"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                >
-                  <div className="relative">
-                    <Image
-                      src="/bot.png?height=180&width=180"
-                      width={180}
-                      height={180}
-                      alt="AI Assistant Robot"
-                      priority
-                      className="relative z-10"
-                    />
-                    <motion.div
-                      className="absolute -inset-4 bg-gradient-to-r from-[#1c3f3a]/10 to-[#1c3f3a]/5 rounded-full blur-xl"
-                      animate={{ 
-                        scale: [1, 1.2, 1],
-                        opacity: [0.5, 0.7, 0.5]
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    />
+            {/* Messages Area - Hidden when minimized */}
+            {!isMinimized && (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4 p-6">
+                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                      <MessageSquare className="h-8 w-8 text-green-900" />
+                    </div>
+                    <p className="text-center">
+                      Hello! I'm BlockOps Assistant. Ask me anything about your finances.
+                    </p>
                   </div>
-                  
-                  <motion.h2 
-                    className="text-2xl font-semibold mt-4 text-[#0a0c29]"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    RAG Query System
-                  </motion.h2>
-                  
-                  <motion.p 
-                    className="mt-2 text-gray-600"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    Ask questions about website content using our RAG (Retrieval-Augmented Generation) system.
-                  </motion.p>
-                </motion.div>
-              ) : (
-                <div 
-                  ref={chatContainerRef} 
-                  className="w-full max-h-[400px] overflow-y-auto space-y-4 p-4 border border-gray-200 rounded-xl custom-scrollbar relative bg-white/80 backdrop-blur-sm"
-                >
+                ) : (
                   <AnimatePresence initial={false}>
-                    {messages.map((msg, index) => (
+                    {messages.map((msg) => (
                       <motion.div
                         key={msg.id}
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 30,
-                        }}
-                        className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={`flex ${
+                          msg.sender === "user" ? "justify-end" : "justify-start"
+                        }`}
                       >
                         <div
-                          className={`p-3 rounded-lg max-w-[80%] shadow-sm ${
-                            msg.sender === "user" 
-                              ? "bg-blue-500 text-white" 
-                              : "bg-gray-100 text-gray-900 border border-gray-200"
-                          } ${
-                            msg.sender === "user" 
-                              ? "rounded-tr-none" 
-                              : "rounded-tl-none"
+                          className={`max-w-[80%] p-4 rounded-2xl shadow-sm ${
+                            msg.sender === "user"
+                              ? "bg-green-900 text-white rounded-br-none"
+                              : "bg-white text-gray-800 rounded-bl-none"
                           }`}
                         >
-                          {msg.sender === "bot" && index === messages.length - 1 && isTyping
-                            ? typingEffect
-                            : msg.text}
+                          <div className="markdown-content">
+                            <ReactMarkdown
+                              components={{
+                                table: ({ node, ...props }) => (
+                                  <div className="overflow-x-auto my-4">
+                                    <table className="min-w-full border border-gray-200 rounded-md" {...props} />
+                                  </div>
+                                ),
+                                thead: ({ node, ...props }) => (
+                                  <thead className="bg-gray-100" {...props} />
+                                ),
+                                th: ({ node, ...props }) => (
+                                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b" {...props} />
+                                ),
+                                td: ({ node, ...props }) => (
+                                  <td className="px-4 py-2 text-sm border-b border-gray-100" {...props} />
+                                ),
+                                pre: ({ node, ...props }) => (
+                                  <pre className="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto my-4" {...props} />
+                                ),
+                                code: ({ node, inline, ...props }) => 
+                                  inline ? (
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500" {...props} />
+                                  ) : (
+                                    <code {...props} />
+                                  )
+                              }}
+                            >
+                              {msg.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                  
-                  {loading && (
-                    <motion.div 
-                      className="flex items-center space-x-2 text-gray-500 text-sm ml-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </motion.div>
-                      <span>Processing request...</span>
-                    </motion.div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Query input with animation */}
-            <motion.div 
-              className="relative mt-6 z-10"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <motion.div
-                whileHover={{ boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}
-                className="relative"
-              >
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask a question about the website content..."
-                  className="w-full px-6 py-4 pl-12 rounded-full bg-white border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#1c3f3a] focus:outline-none text-[#0A0C29] transition-all duration-300"
-                />
-                <Sparkles className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                
-                <motion.button
-                  onClick={sendRagRequest}
-                  disabled={loading || !input.trim() || !agentStatus}
-                  className="absolute right-2 bottom-2 p-3 bg-[#1c3f3a] text-white rounded-full hover:bg-[#1c3f3a]/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ArrowUp className="h-5 w-5" />
-                  <span className="sr-only">Submit</span>
-                  
-                  {/* Submit button pulse effect */}
-                  {input.trim() && agentStatus && (
-                    <motion.span
-                      className="absolute inset-0 rounded-full bg-[#1c3f3a]"
-                      animate={{ 
-                        scale: [1, 1.15, 1],
-                        opacity: [1, 0, 1]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                      style={{ zIndex: -1 }}
-                    />
-                  )}
-                </motion.button>
-              </motion.div>
-              
-              {/* Suggestion chips */}
-              <motion.div 
-                className="flex flex-wrap gap-2 mt-3 justify-center"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                {["What are the amount spend?", "Give me the table", "Summarize the page", "Extract key information"].map((suggestion, i) => (
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm rounded-bl-none">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                        <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+
+            {/* Input Area - Hidden when minimized */}
+            {!isMinimized && (
+              <div className="p-4 bg-white border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Ask about your finances..."
+                    className="flex-1 p-3 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-green-900 bg-gray-50"
+                  />
                   <motion.button
-                    key={i}
-                    onClick={() => setInput(suggestion)}
-                    className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors border border-gray-200"
-                    whileHover={{ scale: 1.05, backgroundColor: "#f0f0f0" }}
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    className="p-3 bg-green-900 text-white rounded-full disabled:bg-gray-300 shadow-md hover:shadow-lg"
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + i * 0.1 }}
                   >
-                    {suggestion}
+                    <ArrowUp className="h-5 w-5" />
                   </motion.button>
-                ))}
-              </motion.div>
-            </motion.div>
-            
-            {/* Floating status indicator */}
-            <motion.div 
-              className={`absolute bottom-2 right-2 flex items-center gap-1 text-xs ${agentStatus ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-600 bg-red-50 border-red-100'} px-2 py-1 rounded-full border`}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.8, type: "spring" }}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className={`${agentStatus ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${agentStatus ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${agentStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
-              </span>
-              {agentStatus ? 'Agent Online' : 'Agent Offline'}
-            </motion.div>
+                </div>
+              </div>
+            )}
           </motion.div>
-        </main>
-      </motion.div>
-      
-      {/* Global styles for scrollbar */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(156, 163, 175, 0.5);
-          border-radius: 20px;
-        }
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-        }
-      `}</style>
-    </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

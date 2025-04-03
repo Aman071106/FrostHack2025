@@ -21,6 +21,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const originalFileRef = useRef<File | null>(null);
 
   const resetState = () => {
     setIsSuccess(false);
@@ -32,10 +33,6 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
     }
   };
 
-  // In CSVUploader.tsx, update the processFile function
-
-  // In CSVUploader.tsx, update the processFile function
-
   const processFile = async (file: File) => {
     // Check if it's a CSV file
     if (!file.name.endsWith('.csv')) {
@@ -44,6 +41,9 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
       return;
     }
 
+    // Store the original file for sending to API later
+    originalFileRef.current = file;
+    
     setFileName(file.name);
     setIsLoading(true);
     simulateProgress();
@@ -60,13 +60,40 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
       const totalBalance = calculateBalance(transactions);
       localStorage.setItem('accountBalance', totalBalance.toString());
 
+      // Send the file to the backend API
+      await sendFileToBackend(file);
+
       onDataLoaded(transactions);
       completeUpload(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       logger.error(`Error processing CSV: ${errorMessage}`, err instanceof Error ? err : null);
-      setError(`Failed to parse CSV: ${errorMessage}`);
+      setError(`Failed to process CSV: ${errorMessage}`);
       completeUpload(false);
+    }
+  };
+
+  // Function to send the file to the backend API
+  const sendFileToBackend = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('http://127.0.0.1:5000/update_vector_store', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send file to backend');
+      }
+
+      logger.info('Successfully sent file to backend');
+      return true;
+    } catch (error) {
+      logger.error(`Error sending file to backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error; // Re-throw to be caught by the calling function
     }
   };
 
@@ -83,20 +110,6 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
       return total + amount;
     }, 0);
   };
-
-  // // Add a function to calculate balance from transactions
-  // const calculateBalance = (transactions: Transaction[]): number => {
-  //   // Assuming your Transaction type has an 'amount' field
-  //   // You'll need to adjust this logic based on your actual data structure
-  //   return transactions.reduce((total, transaction) => {
-  //     // Convert amount to number if it's a string and add it to total
-  //     const amount = typeof transaction.amount === 'string'
-  //       ? parseFloat(transaction.amount)
-  //       : transaction.amount;
-
-  //     return total + amount;
-  //   }, 0);
-  // };
 
   const simulateProgress = () => {
     resetState();
@@ -165,13 +178,12 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
     }, 500);
   }, []);
 
-  // Removed duplicate declaration of processFile
-
   const resetUploader = () => {
     setFileName('');
     setIsSuccess(false);
     setError(null);
     setUploadProgress(0);
+    originalFileRef.current = null;
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -316,7 +328,7 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  {fileName} has been loaded
+                  {fileName} has been loaded and sent to database
                 </motion.p>
                 <motion.button
                   onClick={(e) => {

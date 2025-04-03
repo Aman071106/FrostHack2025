@@ -4,6 +4,8 @@ import pymysql
 from flask import Flask, request, jsonify
 from sqlalchemy import create_engine, text
 import dotenv
+from flask_cors import CORS
+
 
 dotenv.load_dotenv()
 
@@ -18,7 +20,7 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(DATABASE_URL)
 
 app = Flask(__name__)
-
+CORS(app)
 # Ensure the table exists
 TABLE_NAME = "transactions"
 

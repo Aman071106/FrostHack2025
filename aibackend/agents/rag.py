@@ -5,6 +5,7 @@ from langchain_community.vectorstores import FAISS
 from langchain.prompts import ChatPromptTemplate
 import pymysql
 from sqlalchemy import create_engine, text
+
 import dotenv
 import os
 from typing import List
@@ -61,7 +62,12 @@ class RAGResponse(Model):
 def generate_gemini_response(query, context):
     """Generate response using Gemini AI."""
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert in financial advice and analysis. Provide insights based on past transactions in a clear text and table format."""),
+        ("system", """1) You are an expert in financial analysis and future advice and predictions.
+        2) Provide insights about the spendings and expenses. 
+        3) Give future advice so that the spendings and expenses can be minimized if asked.
+        4) Give a concise details about the transactions.
+        5) Keep the answer short and to the point.
+         """),
         ("user", "{query}")
     ])
     full_response = llm.invoke(prompt_template.format(query=query + "Context:" + context))

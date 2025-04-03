@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { ArrowUp, X, Minimize2, Maximize2, ChevronDown, MessageSquare } from "lucide-react";
+import {
+  ArrowUp,
+  X,
+  Minimize2,
+  Maximize2,
+  ChevronDown,
+  MessageSquare,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 
@@ -131,12 +138,16 @@ export default function EnhancedChat() {
             className="fixed bottom-6 right-6 w-full max-w-md flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
             style={{ maxHeight: isMinimized ? "80px" : "70vh" }}
             initial={{ opacity: 0, y: 50, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: isMinimized ? "80px" : "500px" }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              height: isMinimized ? "80px" : "500px",
+            }}
             exit={{ opacity: 0, y: 50, height: 0 }}
             transition={{ duration: 0.3 }}
           >
             {/* Chat Header */}
-            <div 
+            <div
               className="flex items-center justify-between p-4 bg-green-900 text-white cursor-pointer"
               onClick={isMinimized ? toggleMinimize : undefined}
             >
@@ -149,7 +160,11 @@ export default function EnhancedChat() {
                   onClick={toggleMinimize}
                   className="text-white/80 hover:text-white transition-colors p-1"
                 >
-                  {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+                  {isMinimized ? (
+                    <Maximize2 size={18} />
+                  ) : (
+                    <Minimize2 size={18} />
+                  )}
                 </button>
                 <button
                   onClick={toggleChat}
@@ -169,7 +184,8 @@ export default function EnhancedChat() {
                       <MessageSquare className="h-8 w-8 text-green-900" />
                     </div>
                     <p className="text-center">
-                      Hello! I'm BlockOps Assistant. Ask me anything about your finances.
+                      Hello! I'm BlockOps Assistant. Ask me anything about your
+                      finances.
                     </p>
                   </div>
                 ) : (
@@ -181,7 +197,9 @@ export default function EnhancedChat() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                         className={`flex ${
-                          msg.sender === "user" ? "justify-end" : "justify-start"
+                          msg.sender === "user"
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
                         <div
@@ -196,27 +214,55 @@ export default function EnhancedChat() {
                               components={{
                                 table: ({ node, ...props }) => (
                                   <div className="overflow-x-auto my-4">
-                                    <table className="min-w-full border border-gray-200 rounded-md" {...props} />
+                                    <table
+                                      className="min-w-full border border-gray-200 rounded-md"
+                                      {...props}
+                                    />
                                   </div>
                                 ),
                                 thead: ({ node, ...props }) => (
                                   <thead className="bg-gray-100" {...props} />
                                 ),
                                 th: ({ node, ...props }) => (
-                                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b" {...props} />
+                                  <th
+                                    className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b"
+                                    {...props}
+                                  />
                                 ),
                                 td: ({ node, ...props }) => (
-                                  <td className="px-4 py-2 text-sm border-b border-gray-100" {...props} />
+                                  <td
+                                    className="px-4 py-2 text-sm border-b border-gray-100"
+                                    {...props}
+                                  />
                                 ),
                                 pre: ({ node, ...props }) => (
-                                  <pre className="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto my-4" {...props} />
+                                  <pre
+                                    className="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto my-4"
+                                    {...props}
+                                  />
                                 ),
-                                code: ({ node, inline, ...props }) => 
-                                  inline ? (
-                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500" {...props} />
+                                code: ({
+                                  node,
+                                  className,
+                                  children,
+                                  ...props
+                                }) => {
+                                  const isInline = typeof children === "string"; // Detect inline code
+                                  return isInline ? (
+                                    <code
+                                      className="bg-gray-100 px-1 py-0.5 rounded text-red-500"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
                                   ) : (
-                                    <code {...props} />
-                                  )
+                                    <pre className="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto my-4">
+                                      <code {...props} className={className}>
+                                        {children}
+                                      </code>
+                                    </pre>
+                                  );
+                                },
                               }}
                             >
                               {msg.text}
@@ -233,8 +279,14 @@ export default function EnhancedChat() {
                     <div className="bg-white p-4 rounded-2xl shadow-sm rounded-bl-none">
                       <div className="flex space-x-2">
                         <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                        <div className="w-2 h-2 bg-green-900 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                        <div
+                          className="w-2 h-2 bg-green-900 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-green-900 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.4s" }}
+                        ></div>
                       </div>
                     </div>
                   </div>

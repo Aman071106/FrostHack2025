@@ -9,7 +9,10 @@ import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const { data: session, status } = useSession();
-  const [providers, setProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
+  const [providers, setProviders] = useState<Record<
+    string,
+    { id: string; name: string }
+  > | null>(null);
   const [isSignup, setIsSignup] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,8 +42,8 @@ export default function AuthPage() {
     }, 300);
 
     // If user is already logged in, redirect to home
-    if (status === 'authenticated') {
-      router.push('/');
+    if (status === "authenticated") {
+      router.push("/");
     }
 
     return () => clearTimeout(timer);
@@ -57,11 +60,11 @@ export default function AuthPage() {
   const handleFormSwitch = () => {
     // Add animation when switching forms
     if (formRef.current) {
-      formRef.current.classList.add('scale-95', 'opacity-0');
+      formRef.current.classList.add("scale-95", "opacity-0");
       setTimeout(() => {
         setIsSignup(!isSignup);
         if (formRef.current) {
-          formRef.current.classList.remove('scale-95', 'opacity-0');
+          formRef.current.classList.remove("scale-95", "opacity-0");
         }
       }, 300);
     } else {
@@ -71,11 +74,13 @@ export default function AuthPage() {
     setMessage("");
   };
 
-  const handleAuth = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleAuth = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
     setMessage("");
     setIsLoading(true);
-    
+
     try {
       if (isSignup) {
         // Handle signup
@@ -84,16 +89,19 @@ export default function AuthPage() {
           setIsLoading(false);
           return;
         }
-        
+
         // Register the user with your API
-        const registerResponse = await fetch("http://localhost:5000/api/users/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: email, password }),
-        });
-        
+        const registerResponse = await fetch(
+          "http://localhost:5000/api/users/register",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: email, password }),
+          }
+        );
+
         const registerData = await registerResponse.json();
-        
+
         if (registerResponse.ok) {
           setMessage("Registration successful! You can now log in.");
           setIsSignup(false);
@@ -102,18 +110,18 @@ export default function AuthPage() {
         }
       } else {
         // Handle login using NextAuth directly
-        const result = await signIn('credentials', {
+        const result = await signIn("credentials", {
           redirect: false,
           username: email,
           password: password,
         });
-        
+
         if (result?.error) {
           setMessage(result.error || "Login failed. Check your credentials.");
         } else {
           setMessage("Login successful! Redirecting...");
           // Short delay before redirect for user to see success message
-          setTimeout(() => router.push('/'), 1000);
+          setTimeout(() => router.push("/"), 1000);
         }
       }
     } catch (error) {
@@ -126,20 +134,40 @@ export default function AuthPage() {
 
   // Handle provider sign in (e.g., Google)
   const handleProviderSignIn = (providerId: string) => {
-    signIn(providerId, { callbackUrl: '/' });
+    signIn(providerId, { callbackUrl: "/" });
   };
 
   return (
     <div className="min-h-screen bg-white flex overflow-hidden relative">
       {/* Animated background elements */}
-      <div className={`fixed top-1/4 -left-32 w-64 h-64 rounded-full bg-[#1c3f3a]/5 blur-3xl pointer-events-none transition-all duration-1000 ${isLoaded ? 'opacity-80' : 'opacity-0'}`}></div>
-      <div className={`fixed bottom-1/4 -right-32 w-64 h-64 rounded-full bg-[#1c3f3a]/5 blur-3xl pointer-events-none transition-all duration-1000 ${isLoaded ? 'opacity-80' : 'opacity-0'}`}></div>
-      <div className={`absolute -top-10 -right-10 w-20 h-20 bg-[#1c3f3a]/10 rounded-full transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}></div>
-      <div className={`absolute -bottom-12 left-20 w-24 h-24 bg-[#1c3f3a]/10 rounded-full transition-all duration-1000 delay-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}></div>
+      <div
+        className={`fixed top-1/4 -left-32 w-64 h-64 rounded-full bg-[#1c3f3a]/5 blur-3xl pointer-events-none transition-all duration-1000 ${
+          isLoaded ? "opacity-80" : "opacity-0"
+        }`}
+      ></div>
+      <div
+        className={`fixed bottom-1/4 -right-32 w-64 h-64 rounded-full bg-[#1c3f3a]/5 blur-3xl pointer-events-none transition-all duration-1000 ${
+          isLoaded ? "opacity-80" : "opacity-0"
+        }`}
+      ></div>
+      <div
+        className={`absolute -top-10 -right-10 w-20 h-20 bg-[#1c3f3a]/10 rounded-full transition-all duration-1000 delay-300 ${
+          isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-0"
+        }`}
+      ></div>
+      <div
+        className={`absolute -bottom-12 left-20 w-24 h-24 bg-[#1c3f3a]/10 rounded-full transition-all duration-1000 delay-700 ${
+          isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-0"
+        }`}
+      ></div>
 
       <div className="flex flex-col md:flex-row w-full">
         {/* Left Side (Image Section) with animation */}
-        <div className={`w-full md:w-1/2 flex items-center justify-center p-6 transition-all duration-1000 transform ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-20'}`}>
+        <div
+          className={`w-full md:w-1/2 flex items-center justify-center p-6 transition-all duration-1000 transform ${
+            isLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-20"
+          }`}
+        >
           <div className="max-w-md relative">
             {/* Decorative elements around image */}
             <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-[#1c3f3a]/20 animate-pulse"></div>
@@ -169,17 +197,28 @@ export default function AuthPage() {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
-                <span className="text-sm font-semibold text-[#0a0c29]">Secure Login</span>
+                <span className="text-sm font-semibold text-[#0a0c29]">
+                  Secure Login
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Side (Form Section) with animation */}
-        <div className={`w-full md:w-1/2 flex items-center justify-center p-6 transition-all duration-1000 transform ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-20'}`}>
+        <div
+          className={`w-full md:w-1/2 flex items-center justify-center p-6 transition-all duration-1000 transform ${
+            isLoaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-20"
+          }`}
+        >
           <div
             ref={formRef}
             className="w-full max-w-md border border-gray-100 rounded-xl p-8 shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white/80 backdrop-blur-md"
@@ -188,7 +227,11 @@ export default function AuthPage() {
             <div className="text-center mb-8 relative">
               <h1 className="text-3xl font-bold text-[#0a0c29] mb-2 inline-block">
                 {isSignup ? "WELCOME TO BLOCKOPS" : "WELCOME BACK"}
-                <div className={`h-1 w-full bg-[#1c3f3a] mt-1 transition-all duration-500 ${isLoaded ? 'opacity-100 w-full' : 'opacity-0 w-0'}`}></div>
+                <div
+                  className={`h-1 w-full bg-[#1c3f3a] mt-1 transition-all duration-500 ${
+                    isLoaded ? "opacity-100 w-full" : "opacity-0 w-0"
+                  }`}
+                ></div>
               </h1>
               <p className="text-[#949494] transition-all duration-500 delay-200">
                 {isSignup ? "Create your account" : "Sign in to your account"}
@@ -197,7 +240,13 @@ export default function AuthPage() {
 
             {/* Display authentication message */}
             {message && (
-              <div className={`text-center py-2 px-4 rounded-md mb-4 ${message.includes("successful") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+              <div
+                className={`text-center py-2 px-4 rounded-md mb-4 ${
+                  message.includes("successful")
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
                 {message}
               </div>
             )}
@@ -205,8 +254,17 @@ export default function AuthPage() {
             {/* Form Section */}
             <form className="space-y-6" onSubmit={handleAuth}>
               {/* Email Field with icon and animation */}
-              <div className={`space-y-2 transition-all duration-500 delay-300 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                <label htmlFor="email" className="block text-[#0a0c29] font-medium">
+              <div
+                className={`space-y-2 transition-all duration-500 delay-300 transform ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-10"
+                }`}
+              >
+                <label
+                  htmlFor="email"
+                  className="block text-[#0a0c29] font-medium"
+                >
                   Email
                 </label>
                 <div className="relative">
@@ -234,8 +292,17 @@ export default function AuthPage() {
               {/* Password Field with icon and toggle visibility */}
               <div>
                 {/* Password Field */}
-                <div className={`space-y-2 transition-all duration-500 delay-400 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                  <label htmlFor="password" className="block text-[#0a0c29] font-medium">
+                <div
+                  className={`space-y-2 transition-all duration-500 delay-400 transform ${
+                    isLoaded
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-10"
+                  }`}
+                >
+                  <label
+                    htmlFor="password"
+                    className="block text-[#0a0c29] font-medium"
+                  >
                     Password
                   </label>
                   <div className="relative">
@@ -268,8 +335,17 @@ export default function AuthPage() {
 
                 {/* Confirm Password Field (Only for Signup) */}
                 {isSignup && (
-                  <div className={`space-y-2 transition-all duration-500 delay-500 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <label htmlFor="confirmPassword" className="block text-[#0a0c29] font-medium">
+                  <div
+                    className={`space-y-2 transition-all duration-500 delay-500 transform ${
+                      isLoaded
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-10"
+                    }`}
+                  >
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-[#0a0c29] font-medium"
+                    >
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -306,10 +382,18 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full group relative flex items-center justify-center gap-2 px-4 py-3 bg-[#1c3f3a] text-white rounded-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full group relative flex items-center justify-center gap-2 px-4 py-3 bg-[#1c3f3a] text-white rounded-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden transform ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-10"
+                } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 <span className="relative z-10">
-                  {isLoading ? 'Processing...' : isSignup ? 'Sign up' : 'Sign in'}
+                  {isLoading
+                    ? "Processing..."
+                    : isSignup
+                    ? "Sign up"
+                    : "Sign in"}
                 </span>
                 {!isLoading && (
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
@@ -318,7 +402,13 @@ export default function AuthPage() {
               </button>
 
               {/* Separator */}
-              <div className={`relative flex items-center justify-center transition-all duration-500 delay-700 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div
+                className={`relative flex items-center justify-center transition-all duration-500 delay-700 transform ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-10"
+                }`}
+              >
                 <div className="border-t border-gray-300 w-full"></div>
                 <span className="bg-white px-4 text-[#949494] text-sm">or</span>
                 <div className="border-t border-gray-300 w-full"></div>
@@ -356,20 +446,34 @@ export default function AuthPage() {
               )} */}
 
               {/* Toggle Between Sign In & Sign Up with animated underline effect */}
-              <div className={`text-center transition-all duration-500 delay-1000 transform ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div
+                className={`text-center transition-all duration-500 delay-1000 transform ${
+                  isLoaded
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-10"
+                }`}
+              >
                 <button
                   type="button"
                   className="text-[#0a0c29] relative group"
                   onClick={handleFormSwitch}
                 >
-                  <span>{isSignup ? "Already a user? Sign in" : "New here? Create an account"}</span>
+                  <span>
+                    {isSignup
+                      ? "Already a user? Sign in"
+                      : "New here? Create an account"}
+                  </span>
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1c3f3a] transition-all duration-300 group-hover:w-full"></span>
                 </button>
               </div>
             </form>
 
             {/* Small decorative element */}
-            <div className={`absolute -bottom-2 -right-2 w-4 h-4 rounded-full bg-[#1c3f3a] transition-all duration-1000 delay-1200 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}></div>
+            <div
+              className={`absolute -bottom-2 -right-2 w-4 h-4 rounded-full bg-[#1c3f3a] transition-all duration-1000 delay-1200 ${
+                isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              }`}
+            ></div>
           </div>
         </div>
       </div>

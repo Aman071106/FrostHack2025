@@ -75,27 +75,38 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onDataLoaded }) => {
 
   // Function to send the file to the backend API
   const sendFileToBackend = async (file: File) => {
+  try {
+    logger.debug('Starting file upload to backend');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    logger.debug('Created FormData, making fetch request');
+    const response = await fetch('http://127.0.0.1:5001/upload_transactions', {
+      method: 'POST',
+      body: formData,
+    });
+
+    logger.debug(`Received response, status: ${response.status}`);
+    
+    // Clone the response to read it multiple times
+    const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    logger.debug(`Response text: ${responseText}`);
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('http://127.0.0.1:5000/update_vector_store', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send file to backend');
-      }
-
-      logger.info('Successfully sent file to backend');
+      const result = await response.json();
+      logger.info('Upload successful:', result);
       return true;
-    } catch (error) {
-      logger.error(`Error sending file to backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error; // Re-throw to be caught by the calling function
+    } catch (jsonError) {
+      logger.error('Failed to parse JSON response:', jsonError);
+      logger.debug('Response text was:', responseText);
+      throw new Error('Invalid server response format');
     }
-  };
+  } catch (error) {
+    logger.error('Upload failed:', error);
+    throw error;
+  }
+};
 
   // Add a function to calculate balance from transactions
   const calculateBalance = (transactions: Transaction[]): number => {

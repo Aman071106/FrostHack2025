@@ -29,6 +29,7 @@ class Request(Model):
 class Response(Model):
     text: str
 
+# example
 url = "user123"
 user_query = ["what are the amount spend give me the table?"]
 
@@ -38,6 +39,8 @@ agent = Agent(name="bob", seed="YOUR NEW PHRASE hahahaha", port=8080, endpoint=[
 latest_response = None
 response_event = asyncio.Event()
 
+
+# user->rag agent
 @agent.on_event("startup")
 async def start_interaction(ctx: Context):
     """
@@ -83,7 +86,7 @@ async def handle_post(ctx: Context, req: Request) -> Response:
     """
     global latest_response
     ctx.logger.info("Received POST request")
-    
+    ctx.logger.info(f"User {req.url},query:{req.user_query}")
     # Reset the event and response before sending new request
     response_event.clear()
     latest_response = None

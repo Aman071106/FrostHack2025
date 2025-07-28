@@ -1,0 +1,41 @@
+
+# 1. create a .env in root
+# add your
+
+# GEMINI_API_KEY = AIzaSyD59gZsEmRe6PQLl-mlswgnFp52L2BAWKc
+# DB_USER = myuser
+# DB_PASSWORD = mypassword
+# DB_HOST = localhost
+# DB_PORT = 3306
+# DB_NAME=transactionDB
+
+# 2. pip install -r requirements.txt
+
+# 3. cd aibackend/agents
+# python rag.py
+# python user.py
+
+
+# frontend:
+
+#     option 1: for quick testing: cd aibackend/app streamlit run app.py
+
+#     option 2:
+#         cd aibackend/update_transactions
+#         python csv_uploader.py
+#         Create a .env inside auth_backend and add Your mongodb_uri string to it
+#         cd auth_backend
+#         npm install dotenv monngodb express cors mongoose bcryptjs
+#         node server.js
+#         # frontend
+
+#         cd frontend
+#         npm install next react react-dom
+#         cd app
+#         npm run dev
+    
+
+
+
+
+

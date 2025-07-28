@@ -1,0 +1,17 @@
+# Dependency directories
+node_modules/
+
+# Python virtual environment
+venv/
+venv
+.env
+
+# Other common exclusions
+.DS_Store
+*.log
+.idea/
+.vscode/
+dist/
+build/
+*.pyc
+__pycache__/

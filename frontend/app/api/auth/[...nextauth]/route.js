@@ -26,7 +26,7 @@ export const authOptions = {
         
         try {
           // Verify credentials using your API
-          const response = await fetch("http://localhost:5001/api/users/login", {
+          const response = await fetch("http://localhost:5000/api/users/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

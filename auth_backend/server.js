@@ -6,7 +6,7 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 app.use(express.json());
-PORT = process.env.PORT || 5000;
+PORT = 5000;
 
 console.log("MongoDB URI:", process.env.MONGODB_URI);
 console.log(PORT);

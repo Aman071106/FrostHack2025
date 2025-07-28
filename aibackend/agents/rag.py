@@ -10,17 +10,21 @@ import dotenv
 import os
 from typing import List
 import pandas as pd
-
+from urllib.parse import quote_plus
 # Load environment variables
 dotenv.load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = "financial_data"
-
+DB_PORT=os.getenv('DB_PORT')
+DB_NAME=os.getenv('DB_NAME')
 # Database connection
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+from urllib.parse import quote_plus
+
+encoded_password = quote_plus(DB_PASSWORD)
+
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{encoded_password}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(DATABASE_URL)
 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY)
@@ -28,12 +32,16 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API
 def read_past_transactions(url):
     """Fetch past transactions of a user from MySQL database."""
     try:
-        query = text(f"SELECT * FROM transactions WHERE userId = :user_id")
+        query = text("""
+                        SELECT * FROM transactions
+                    """)
+
+
         with engine.connect() as conn:
-            df = pd.read_sql(query, conn, params={"user_id": url})
+            df = pd.read_sql(query, conn)
 
         if df.empty:
-            return "No financial data found for this user."
+            return "No financial data found"
         
         return df.to_string(index=False)
     except Exception as e:
@@ -92,7 +100,7 @@ async def handle_rag_request(ctx: Context, sender: str, msg: RAGRequest):
     documents = [user_data]
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GEMINI_API_KEY)
     vector_store = FAISS.from_texts(documents, embeddings)
-    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
+    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
     for question in msg.user_query:
         retrieved_docs = retriever.invoke(question)

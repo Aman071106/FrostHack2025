@@ -1,0 +1,13 @@
+uagents
+beautifulsoup4
+langchain-google-genai
+langchain-community
+langchain
+pymysql
+sqlalchemy
+python-dotenv
+pandas
+streamlit
+requests
+flask_cors
+flask

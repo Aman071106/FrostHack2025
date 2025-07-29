@@ -1,2 +1,0 @@
-1. docker run -p 8080:8080 -p 8000:8000 -p 8501:8501 -p 5001:5001 --env-file .env st_app
-PORT_MAPPING FOR EASE

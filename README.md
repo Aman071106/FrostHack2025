@@ -51,59 +51,91 @@ The **RAG Pipeline** ensures that financial insights are generated in real-time 
  
 
 ---
+# FrostHack2025  
 
-## 🛠️ Installation & Setup (MacOS and Ubuntu)  
+## 🚀 Running Instructions  
 
-### 1️⃣ Backend Setup (Flask & Fetch.AI Agents)  
-```bash  
+### ✅ Method 1: Manually  
+
+#### 1️⃣ Backend Setup (Flask & Fetch.AI Agents)  
+```bash
 # Clone the repository  
 git clone https://github.com/Aman071106/FrostHack2025.git  
 cd FrostHack2025  
-cd aibackend  
 
 # Set up virtual environment  
 python3 -m venv venv  
 source venv/bin/activate  # On Windows: venv\Scripts\activate  
-
-# Install dependencies  
-pip install -r backend/requirements.txt  
-
-# Run Flask server  
-python backend/app.py  
-```  
-
-### 2️⃣ Fetch.AI Agents Setup  
-In **one terminal**, run:  
-```bash  
-cd agents  
-python rag.py  
-```  
-In **another terminal**, run:  
-```bash  
-cd agents  
-python user.py  
-```  
-
-### 3️⃣ Frontend Setup (Next.js & TypeScript)  
-```bash  
-# Navigate to frontend directory  
-cd frontend  
-
-# Install dependencies  
-npm install  
-
-# Run the Next.js frontend  
-npm run dev  
-```  
-
-### 4️⃣ Accessing the Website  
-Once everything is running, open your browser and go to:  
 ```
-http://localhost:3000
+#### 2️⃣ Environment Variables
+- Create a .env file in the root directory and add the following:
 ```
+GEMINI_API_KEY = AIzaSyD59g**************************52L2BAWKc  
+DB_USER = ****  
+DB_PASSWORD = ******** 
+DB_HOST = ******
+DB_PORT = **** 
+DB_NAME = ****** 
+```
+#### 3️⃣ Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+#### 4️⃣ Run Backend Agents
+```bash
+cd aibackend/agents
+python rag.py
+python user.py
+cd ..
+cd update_transactions
+python csv_uploader.py
+```
+#### 💻 Frontend Setup
+##### ✅ Option 1: Quick Testing (Streamlit App)
 
+```bash
+cd aibackend/app
+streamlit run app.py
+```
+##### ✅ Option 2: Full Setup (Next.js + MongoDB Auth)
+```bash
+# Setup Auth Backend
+cd auth_backend
+# Create a .env file with your MongoDB URI
+# MONGODB_URI=mongodb+srv://<your-uri>
+
+npm install dotenv mongodb express cors mongoose bcryptjs
+node server.js
+# Setup Frontend
+cd ../../frontend
+npm install next react react-dom
+
+cd app
+npm run dev
+```
+### 📦 Method 2: Via Docker
+- 1. Streamlit app
+- Create a .env file in the root directory and add the following:(or use -e tags)
+```
+GEMINI_API_KEY = AIzaSyD59g**************************52L2BAWKc  
+DB_USER = ****  
+DB_PASSWORD = ******** 
+DB_HOST = ****** (ip address if machine localhost as docker localhost is diff or use `host.docker.internal`)
+DB_PORT = **** 
+DB_NAME = ****** 
+```
+```bash
+  docker build -t st_app .
+``` 
+  OR 
+```bash  
+  docker pull deadlyharbor/st_app
+```
+#### Then
+```bash
+ docker run -p 8080:8080 -p 8000:8000 -p 8501:8501 -p 5001:5001 --env-file .env st_app
+```
 ---
-
 ## 📊 Dashboard Preview  
 ![chart](https://github.com/user-attachments/assets/faa5fa1d-2530-4c50-b049-395e041661aa)
  

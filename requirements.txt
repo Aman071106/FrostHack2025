@@ -11,3 +11,4 @@ streamlit
 requests
 flask_cors
 flask
+faiss-cpu

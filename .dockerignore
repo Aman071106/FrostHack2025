@@ -1,0 +1,7 @@
+.env
+venv/
+LICENSE
+.gitignore
+.md
+.txt
+example_data/

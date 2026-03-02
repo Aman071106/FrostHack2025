@@ -1,6 +1,6 @@
 
 
-# Agentic-Powered Real-Time Finance Tracker  
+# Agentic Real-Time Finance Tracker  
 <p align="center">  
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" alt="Next.js" width="60" height="60"/>  
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" width="60" height="60"/>  

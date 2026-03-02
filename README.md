@@ -163,9 +163,3 @@ DB_NAME = ******
 
 ---
 
-### ✅ **What's New?**  
-- **Added RAG Pipeline Flowchart** 📊  
-- **Flowcharts are now interactive** (GitHub renders MermaidJS)  
-- **Updated Local Hosting Instructions** for better clarity  
-
-Let me know if you want any more modifications! 🚀

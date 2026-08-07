@@ -1,6 +1,7 @@
 # 1. create a .env in root
 # add your
 
+# Note that this api key is expired.
 # GEMINI_API_KEY = AIzaSyD59gZsEmRe6PQLl-mlswgnFp52L2BAWKc
 # DB_USER = myuser
 # DB_PASSWORD = mypassword
